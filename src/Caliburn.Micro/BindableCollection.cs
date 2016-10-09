@@ -75,16 +75,16 @@
         /// </summary>
         /// <param name = "items">The items.</param>
         public virtual void AddRange(IEnumerable<T> items) {
-            bool anyItemDeleted = false;
+            bool anyItemAdded = false;
             var index = Count;
             foreach (var item in items)
             {
                 this.InsertItem(index, item);
                 index++;
-                anyItemDeleted = true;
+                anyItemAdded = true;
             }
 
-            if (anyItemDeleted)
+            if (anyItemAdded)
             {
                 OnPropertyChanged(new PropertyChangedEventArgs("Count"));
                 OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
