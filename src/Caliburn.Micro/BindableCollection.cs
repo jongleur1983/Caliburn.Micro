@@ -11,6 +11,12 @@
     public class BindableCollection<T> : ObservableCollection<T>, IObservableCollection<T>
     {
         /// <summary>
+        /// monitor token used to lock the collection to prevent concurrent manipulation from different threads.
+        /// To allow deriving classes to make use of the same lock, this field is protected.
+        /// </summary>
+        protected readonly object manipulationLock = new object();
+
+        /// <summary>
         /// Initializes a new instance of the <see cref = "Caliburn.Micro.BindableCollection&lt;T&gt;" /> class.
         /// </summary>
         public BindableCollection()
@@ -70,18 +76,56 @@
             }
         }
 
+        /// <inheritdoc />
+        protected override void RemoveItem(int index) {
+            lock (this.manipulationLock) {
+                base.RemoveItem(index);
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void InsertItem(int index, T item) {
+            lock (this.manipulationLock) {
+                base.InsertItem(index, item);
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void ClearItems() {
+            lock (this.manipulationLock) {
+                base.ClearItems();
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void MoveItem(int oldIndex, int newIndex) {
+            lock (this.manipulationLock) {
+                base.MoveItem(oldIndex, newIndex);
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void SetItem(int index, T item) {
+            lock (this.manipulationLock) {
+                base.SetItem(index, item);
+            }
+        }
+
         /// <summary>
         /// Adds the range.
         /// </summary>
         /// <param name = "items">The items.</param>
         public virtual void AddRange(IEnumerable<T> items) {
             bool anyItemAdded = false;
-            var index = Count;
-            foreach (var item in items)
+
+            lock (this.manipulationLock)
             {
-                this.InsertItem(index, item);
-                index++;
-                anyItemAdded = true;
+                var index = Count;
+                foreach (var item in items) {
+                    base.InsertItem(index, item);
+                    index++;
+                    anyItemAdded = true;
+                }
             }
 
             if (anyItemAdded)
@@ -98,11 +142,14 @@
         /// <param name = "items">The items.</param>
         public virtual void RemoveRange(IEnumerable<T> items) {
             var anyItemRemoved = false;
-            foreach (var item in items) {
-                var index = IndexOf(item);
-                if (index >= 0) {
-                    RemoveItem(index);
-                    anyItemRemoved = true;
+
+            lock (this.manipulationLock) {
+                foreach (var item in items) {
+                    var index = IndexOf(item);
+                    if (index >= 0) {
+                        base.RemoveItem(index);
+                        anyItemRemoved = true;
+                    }
                 }
             }
 
